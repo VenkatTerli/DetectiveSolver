@@ -130,8 +130,8 @@ namespace DetectiveSolver
 
             else
             {
-                ProcesMatchedWitness();
-                //temp();
+                //ProcesMatchedWitness();
+                temp();
                 ShowResult();
             }
             return;
@@ -193,6 +193,7 @@ namespace DetectiveSolver
                 ProcessWitnessOrder(tempRecords, false);
             }
         }
+
         public void ProcessWitnessOrder(List<WitnessRecord> records, bool bIgnoreIfSplit)
         {
 
@@ -201,6 +202,12 @@ namespace DetectiveSolver
                 var record1 = records[0];
                 var record2 = records[count];
 
+                if (record1.getWitnessName.Equals(record2.getWitnessName))
+                    continue;
+#if DEBUG
+
+                Console.WriteLine("Rec " + record1.getWitnessName + " Rec 2 " + record2.getWitnessName);
+#endif
                 ConstraintMatching(record1, record2, bIgnoreIfSplit);
                 CombineMaxTimeLines();
 
@@ -250,7 +257,7 @@ namespace DetectiveSolver
                 
                 
                 int remCount = tempRec.Count;
-
+                wintessList.PartialMergeWitness.Clear();
                 for (int count = 0; count < remCount; count++)
                 {
                     for (int nextW = count + 1; nextW < remCount; nextW++)
@@ -313,7 +320,7 @@ namespace DetectiveSolver
                         string witnessItem_W2 = WitnessTwoItems.getWitness();
                         bool bFirstItem_W2 = WitnessTwoItems.IsFirstItem;
                         bool bLastItem_W2 = WitnessTwoItems.isLastItem;
-                         
+
                         bool bNextItem_W2 = false;
                         string witnessGroup = WitnessTwoItems.WitnessGroup;
                         lastMatchdString = witnessItem_W2;
@@ -361,8 +368,9 @@ namespace DetectiveSolver
                                     //split
                                     bSplit = true;
                                     subWitnessitems = new List<string>();
-                                    int stIndex = stPos > 0 ? (stPos-1) : 0;
-                                    CopyTillLastMatch(ref newRecordItems, WitnessTwoItemsList[stIndex].getWitness(), ref subWitnessitems);
+                                    int stIndex = stPos > 0 ? (stPos - 1) : -1;
+                                    if(stIndex>=0)
+                                        CopyTillLastMatch(ref newRecordItems, WitnessTwoItemsList[stIndex].getWitness(), ref subWitnessitems);
 
                                     for (int j = stPos; j <= ItemIndex; j++)
                                     {
@@ -393,13 +401,21 @@ namespace DetectiveSolver
                                     //split
                                     bSplit = true;
                                     subWitnessitems = new List<string>();
-                                    int stIndex = stPos > 0 ? (stPos - 1) : 0;
-                                    CopyTillLastMatch(ref newRecordItems, WitnessTwoItemsList[stIndex].getWitness(), ref subWitnessitems);
+                                    int stIndex = stPos > 0 ? (stPos - 1) : -1;
+                                    if (stIndex >= 0)
+                                        CopyTillLastMatch(ref newRecordItems, WitnessTwoItemsList[stIndex].getWitness(), ref subWitnessitems);
                                     int matchedItemPos = stPos;
+                                    bool bVisit = false;
                                     for (int j = stPos; j < WitnessTwoItemsList.Count; j++)
                                     {
-                                        if(witnessItem_W2.Equals(WitnessTwoItemsList[j].getWitness()))
-                                            matchedItemPos = j;
+                                        if (witnessItem_W2.Equals(WitnessTwoItemsList[j].getWitness()))
+                                        {
+                                            if (!bVisit)
+                                            {
+                                                matchedItemPos = j;
+                                                bVisit = true;
+                                            }
+                                        }
 
                                         subWitnessitems.Add(WitnessTwoItemsList[j].getWitness());
                                     }
@@ -421,11 +437,11 @@ namespace DetectiveSolver
                         var groupName = WitnessTwoItemsList[0].WitnessGroup;
                         if (!bIgnoreIfSplit)
                         {
-                            
+                             
                             if (iLastVistedPos + 1 == WitnessTwoItemsList.Count) // last item in second list
                             {
                                 bSplit = true;
-
+                                 
                                 subWitnessitems = new List<string>();
                                 CopyTillLastMatch(ref newRecordItems, lastMatchdString, ref subWitnessitems);
 
@@ -433,12 +449,17 @@ namespace DetectiveSolver
                                 {
                                     subWitnessitems.Add(WitnessTwoItemsList[j].getWitness());
                                 }
+                                 
                             }
+
                             if (bLastItem_W1 && WitnessOne.GetPrevItemMatched(groupName))
                             {
-                                if (subWitnessitems == null)
-                                    subWitnessitems = new List<string>();
-                                subWitnessitems.Add(witnessItem_W1);
+                                if ((iLastVistedPos + 1) > WitnessTwoItemsList.Count) // No more elements in W2
+                                {
+                                    if (subWitnessitems == null)
+                                        subWitnessitems = new List<string>();
+                                    subWitnessitems.Add(witnessItem_W1);
+                                }
                             }
                         }
                         newRecordItems.Add(witnessItem_W1);
@@ -450,12 +471,12 @@ namespace DetectiveSolver
 
                 if (!bSplit)
                 {
-                    wintessList.addToFullMerge(CreateWitnessRecord(newRecordItems));                     
+                    wintessList.addToFullMerge(CreateWitnessRecord(newRecordItems));
                 }
                 else
                 {
-                   
-                    if(!bIgnoreIfSplit)
+
+                    if (!bIgnoreIfSplit)
                     {
                         if (subWitnessitems != null)
                         {
@@ -464,11 +485,42 @@ namespace DetectiveSolver
 
                         wintessList.addToPartialMerge(CreateWitnessRecord(newRecordItems));
                     }
+                    else
+                        wintessList.addToPartialMerge(WitnessTwo);
                 }
+#if DEBUG
+                Console.WriteLine("partial list");
+                foreach (var record in wintessList.PartialMergeWitness)
+                {
+                    foreach (var item in record.GetWitnessRecordItems())
+                        Console.WriteLine(item.getWitness());
+
+                    Console.WriteLine("\n");
+                }
+
+                Console.WriteLine("partial list\n");
+
+                Console.WriteLine("Full list");
+                foreach (var record in wintessList.FullMergeWintess)
+                {
+                    foreach (var item in record.GetWitnessRecordItems())
+                    Console.WriteLine(item.getWitness());
+
+                    Console.WriteLine("\n");
+                }
+
+                Console.WriteLine("Full list\n");
+
+#endif
+
             }
             catch (Exception e)
             {
                 Console.WriteLine("Contraint matching error" + e.Message);
+            }
+            finally
+            {
+                WitnessTwo.LastVistedItem = -1;
             }
 
         }
@@ -554,6 +606,9 @@ namespace DetectiveSolver
             }
             else
             {
+                CombineMaxPartialTimeLines();
+                CombineMaxTimeLines();
+
                 ListCount = wintessList.PartialMergeWitness.Count;
                 bool bFullListFound = false;
                 if (ListCount > 0)
@@ -570,6 +625,28 @@ namespace DetectiveSolver
 
                 if (showList.Count > 0 && wintessList.FullMergeWintess.Count > 0)
                 {
+                    //Final processing
+                    var record1 = wintessList.FullMergeWintess[0];
+                    bool bNoSplit = true;
+                    var tempList = showList;
+                    tempList.Insert(0,record1);
+                    ProcessWitnessOrder(tempList, bNoSplit);
+                    if (wintessList.FullMergeWintess[0].GetWitnessRecordItems().Count == GetAllWitnessActions)
+                    {
+                        showList = wintessList.FullMergeWintess;
+                        bFullListFound = true;
+                    }
+                    //foreach (var record2 in showList)
+                    //{
+                    //    ConstraintMatching(record1, record2, bNoSplit);
+                    //    if (wintessList.FullMergeWintess[0].GetWitnessRecordItems().Count == GetAllWitnessActions)
+                    //    {
+                    //        showList = wintessList.FullMergeWintess;
+                    //        bFullListFound = true;
+                    //        break;
+                    //    }
+                    //}
+                    
                     if (!bFullListFound)
                         foreach (var record in wintessList.FullMergeWintess)
                             showList.Insert(0, record);
@@ -633,9 +710,7 @@ namespace DetectiveSolver
             bFullListFound = false;
             int numOfActions = 0;
             bool bFound = false;
-
-            
-
+ 
             foreach (var record in wintessList.PartialMergeWitness)
             {
                 numOfActions = record.GetWitnessRecordItems().Count;
