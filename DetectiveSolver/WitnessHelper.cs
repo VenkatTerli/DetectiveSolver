@@ -93,50 +93,7 @@ namespace DetectiveSolver
 
             return bResult;
         }
-
-
-
-        //protected void ShowResult()
-        //{
-             
-            //Console.WriteLine("*******output********************\n");
-            //int numOfWitness = ListOfWitness.Count;
-            //if (numOfWitness == 0) return;
-
-            //Console.WriteLine("\t[");
-            //for (int list = 0; list < numOfWitness; list++)
-            //{
-            //    WitnessRecord witness = ListOfWitness[list];
-
-            //    List<WitnessRecordItem> records = witness.GetWitnessRecordItems();
-            //    int numOfRecords = records.Count;
-            //    if (numOfRecords > 0)
-            //    {
-            //        Console.WriteLine("\t [");
-            //        for (int recIndex = 0; recIndex < numOfRecords; recIndex++)
-            //        {
-            //            WitnessRecordItem item = records[recIndex];
-            //            if (numOfRecords != (recIndex + 1))
-            //                Console.WriteLine("\t  \"" + item.getWitness() + "\",");
-            //            else
-            //                Console.WriteLine("\t  \"" + item.getWitness() + "\"");
-            //        }
-
-            //        if (numOfWitness != (list + 1))
-            //            Console.WriteLine("\t ],");
-            //        else
-            //            Console.WriteLine("\t ]");
-            //    }
-
-            //}
-
-            //Console.WriteLine("\t]");
-
-            //Console.WriteLine("\n*******output********************");
-       // }
-
-
-
+ 
         protected bool CompareTwoWitness(WitnessRecord firstWitness, WitnessRecord nextWitness)
         {
             bool bMatched = false;

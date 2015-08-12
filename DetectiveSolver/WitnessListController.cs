@@ -313,6 +313,7 @@ namespace DetectiveSolver
                         string witnessItem_W2 = WitnessTwoItems.getWitness();
                         bool bFirstItem_W2 = WitnessTwoItems.IsFirstItem;
                         bool bLastItem_W2 = WitnessTwoItems.isLastItem;
+                         
                         bool bNextItem_W2 = false;
                         string witnessGroup = WitnessTwoItems.WitnessGroup;
                         lastMatchdString = witnessItem_W2;
@@ -394,12 +395,19 @@ namespace DetectiveSolver
                                     subWitnessitems = new List<string>();
                                     int stIndex = stPos > 0 ? (stPos - 1) : 0;
                                     CopyTillLastMatch(ref newRecordItems, WitnessTwoItemsList[stIndex].getWitness(), ref subWitnessitems);
+                                    int matchedItemPos = stPos;
                                     for (int j = stPos; j < WitnessTwoItemsList.Count; j++)
                                     {
+                                        if(witnessItem_W2.Equals(WitnessTwoItemsList[j].getWitness()))
+                                            matchedItemPos = j;
+
                                         subWitnessitems.Add(WitnessTwoItemsList[j].getWitness());
                                     }
 
-                                    newRecordItems.Add(witnessItem_W2);
+                                    for (int j = matchedItemPos; j < WitnessTwoItemsList.Count; j++)
+                                    {
+                                        newRecordItems.Add(WitnessTwoItemsList[j].getWitness());
+                                    }
                                 }
                             }
                         }
@@ -446,13 +454,8 @@ namespace DetectiveSolver
                 }
                 else
                 {
-                    if (bIgnoreIfSplit)
-                    {
-                        //wintessList.addToPartialMerge(WitnessOne);
-                        //wintessList.addToPartialMerge(WitnessTwo);
-
-                    }
-                    else
+                   
+                    if(!bIgnoreIfSplit)
                     {
                         if (subWitnessitems != null)
                         {
