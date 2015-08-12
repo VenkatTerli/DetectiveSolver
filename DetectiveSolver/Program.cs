@@ -10,7 +10,7 @@ namespace DetectiveSolver
         static void Main(string[] args)
         {
             var controller = new WitnessListController(args[0]);
-            Console.ReadKey();
+            //Console.ReadKey();
             controller.StartInvestigation();
         }
     }
