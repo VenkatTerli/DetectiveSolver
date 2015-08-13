@@ -32,6 +32,31 @@ namespace DetectiveSolver
             MatchedList = new Dictionary<WitnessRecord, List<WitnessRecord>>();
         }
 
+        public WitnessList(ref WitnessList cloneObj)
+        {
+            ActualRecords = new List<WitnessRecord>();
+            FullMerge = new List<WitnessRecord>();
+            PartialMerge = new List<WitnessRecord>();
+            NoMerge = new List<WitnessRecord>();
+            MatchedList = new Dictionary<WitnessRecord, List<WitnessRecord>>();
+
+            foreach (var ARec in cloneObj.ActualRecords)
+                ActualRecords.Add(ARec);
+
+
+            foreach (var ARec in cloneObj.FullMergeWintess)
+                FullMerge.Add(ARec);
+
+
+            foreach (var ARec in cloneObj.PartialMergeWitness)
+                PartialMerge.Add(ARec);
+
+
+            foreach (var ARec in cloneObj.NoMergeWitness)
+                NoMerge.Add(ARec);
+
+        }
+
         public void addNewWitness(WitnessRecord record)
         {
             ActualRecords.Add(record);
@@ -39,13 +64,15 @@ namespace DetectiveSolver
 
         public void addToFullMerge(WitnessRecord record)
         {
-            FullMerge.Add(record);
+            if(!FullMerge.Contains(record))
+                FullMerge.Add(record);
         }
 
         public void addToPartialMerge(WitnessRecord record)
         {
-            
-            PartialMerge.Insert(0, record);
+            //PartialMerge.Add(record);
+            if(!PartialMerge.Contains(record))
+                PartialMerge.Insert(0, record);
              
         }
         
@@ -57,7 +84,7 @@ namespace DetectiveSolver
         public void addToMatchedList(WitnessRecord key,List<WitnessRecord> value)
         {
             if (!MatchedList.ContainsKey(key))
-            {
+            {                 
                 MatchedList.Add(key, value);
             }             
             

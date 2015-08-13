@@ -16,7 +16,7 @@ namespace DetectiveSolver
 {
     class WitnessHelper
     {
-
+        protected WitnessList wintessList;
         protected bool ReadFile(string fileName, ref  List<List<string>> WitnessList,out int totalActions)
         {
             bool bResult = true;
@@ -93,7 +93,8 @@ namespace DetectiveSolver
 
             return bResult;
         }
- 
+
+        
         protected bool CompareTwoWitness(WitnessRecord firstWitness, WitnessRecord nextWitness)
         {
             bool bMatched = false;
@@ -138,7 +139,65 @@ namespace DetectiveSolver
 
             return bMerge;
         }
- 
 
+        protected void copyToNewWitnessList(ref WitnessList newWitnessList, ref WitnessList revList)
+        {
+            foreach (var fullList in revList.FullMergeWintess)
+                newWitnessList.addToFullMerge(fullList);
+
+            foreach (var fullList in revList.PartialMergeWitness)
+                newWitnessList.addToPartialMerge(fullList);
+        }
+
+        protected void copyToMasterlist(WitnessList revList)
+        {
+            foreach (var fullList in revList.FullMergeWintess)
+                wintessList.addToFullMerge(fullList);
+
+            foreach (var fullList in revList.PartialMergeWitness)
+                wintessList.addToPartialMerge(fullList);
+        }
+
+        protected void CopyTillLastMatch(ref List<string> newRecordItems, string lastMatched, ref List<string> subWitnessitems)
+        {
+            if (string.IsNullOrEmpty(lastMatched)) return;
+
+            foreach (var newItem in newRecordItems)
+            {
+                subWitnessitems.Add(newItem);
+                if (newItem.Equals(lastMatched))
+                    break;
+            }
+        }
+
+        protected bool isItemMatched(string wintessItem, WitnessRecord witnessTwo, out int ItemFoundIndex)
+        {
+            bool bItemFound = false;
+            ItemFoundIndex = -1;
+            var witnessItemsList = witnessTwo.GetWitnessRecordItems();
+            int stIndex = witnessTwo.LastVistedItem + 1;
+
+            for (int item = stIndex; item < witnessItemsList.Count; item++)
+            {
+                if (wintessItem.Equals(witnessItemsList[item].getWitness()))
+                {
+                    ItemFoundIndex = witnessItemsList[item].WitnessPos;
+                    bItemFound = true;
+                    break;
+                }
+            }
+
+            return bItemFound;
+        }
+
+
+        protected bool isWitnessMatched()
+        {
+            return wintessList.MatchListStatus();
+        }
+
+        
+
+        
     }
 }

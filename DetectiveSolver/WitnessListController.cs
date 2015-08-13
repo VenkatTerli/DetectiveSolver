@@ -20,8 +20,40 @@ namespace DetectiveSolver
         string FileName;
         string WitnessName;
         static int WitnessNumber;
-        WitnessList wintessList;
+        
         private int TotalActions;
+
+        public void StartInvestigation()
+        {
+
+            try
+            {
+                ReadInputData();
+
+                GenerateTimeLines();
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("[Internal Error]" + e.Message);
+            }
+        }
+        private void GenerateTimeLines()
+        {
+            IdentifyMatchingWitness();
+
+            if (!isWitnessMatched())
+                ShowResult();
+
+            else
+            {
+                CreateTimeLines();
+
+                ShowResult();
+            }
+            return;
+        }
+
 
         public WitnessListController(string FileName)
         {
@@ -105,125 +137,145 @@ namespace DetectiveSolver
             get { return TotalActions; }
         }
 
-        public void StartInvestigation()
+      
+       
+ 
+        public void CreateTimeLines()
         {
-
-            try
-            {
-                ReadInputData();
-
-                GenerateTimeLines();
-
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("[Internal Error]" + e.Message);
-            }
-        }
-
-        private void GenerateTimeLines()
-        {
-            IdentifyMatchingWitness();
-
-            if (!isWitnessMatched())
-                ShowResult();
-
-            else
-            {
-                //ProcesMatchedWitness();
-                temp();
-                ShowResult();
-            }
-            return;
-        }
-
-        private void ProcesMatchedWitness()
-        {
-            var matchedWitnesses = wintessList.GetMatchedList;
-            var keys = new List<WitnessRecord>(matchedWitnesses.Keys);
-
-            foreach (var key in keys)
-                ScanDictionary(key);
-        }
-
-
-        private void ScanDictionary(WitnessRecord key)
-        {
-            var dect = wintessList.GetMatchedList;
-            if (dect.ContainsKey(key))
-            {
-                List<WitnessRecord> records = dect[key];
-                foreach (var record in records)
-                {
-                    ScanDictionary(record);
-                    dect.Remove(key);
-                }
-                records.Insert(0, key); //insert the key as front
-                ProcessWitnessOrder(records,false);
-            }
-
-        }
-
-        //public void ProcessWitnessOrder(List<WitnessRecord> records,bool bIgnoreIfSplit)
-        //{
-
-        //    for (int count = 1; count < records.Count; count++)
-        //    {
-        //        var record1 = records[0];
-        //        var record2 = records[count];
-
-        //        ConstraintMatching(record1, record2, bIgnoreIfSplit);
-        //        CombineMaxTimeLines();
-                
-        //    }
-
-        //   CombineMaxPartialTimeLines();
-        //}
-
-        public void temp()
-        {
+            bool bSplitNtRqd = false;
+            WitnessList revList = null;
+            WitnessList tempList = new WitnessList();
             for (int i =0;i<wintessList.GetWitnessList.Count ;i++)
             {
-                List<WitnessRecord> tempRecords = new List<WitnessRecord>();
+                revList = null;
                 for (int j = i + 1; j < wintessList.GetWitnessList.Count; j++)
                 {
-                    tempRecords.Add(wintessList.GetWitnessList[i]);
-                    tempRecords.Add(wintessList.GetWitnessList[j]);
+                    var record1 = wintessList.GetWitnessList[i];
+                    var record2 = wintessList.GetWitnessList[j];                    
+                    var newWitnessList = ConstraintMatching(record1, record2, bSplitNtRqd);
+                     
+                    if (revList != null)
+                        copyToNewWitnessList(ref newWitnessList,ref revList);
+
+                    revList = CombineMaxTimeLines(newWitnessList);
+                                        
                 }
-                ProcessWitnessOrder(tempRecords, false);
+ 
+                if (revList == null) continue;
+
+                copyToNewWitnessList(ref tempList, ref revList);
+                tempList = CombineMaxTimeLines(tempList);
+  
             }
+
+            copyToMasterlist(tempList);
+
         }
 
-        public void ProcessWitnessOrder(List<WitnessRecord> records, bool bIgnoreIfSplit)
+         
+        private WitnessList FindBestMatchInFullList(WitnessRecord W1Record, WitnessRecord W2Record, bool bNoSplit)
         {
+            var revWitnesList = ConstraintMatching(W1Record, W2Record, bNoSplit);
+             
+            var W1RecordLen = W1Record.GetWitnessRecordItems().Count;
+            var W2RecordLen = W2Record.GetWitnessRecordItems().Count;
+            var revRecordLen = revWitnesList.FullMergeWintess[0].GetWitnessRecordItems().Count;
 
-            for (int count = 1; count < records.Count; count++)
+            if (!((revRecordLen > W1RecordLen) && (revRecordLen > W2RecordLen)))
             {
-                var record1 = records[0];
-                var record2 = records[count];
-
-                if (record1.getWitnessName.Equals(record2.getWitnessName))
-                    continue;
-#if DEBUG
-
-                Console.WriteLine("Rec " + record1.getWitnessName + " Rec 2 " + record2.getWitnessName);
-#endif
-                ConstraintMatching(record1, record2, bIgnoreIfSplit);
-                CombineMaxTimeLines();
+                
+                revWitnesList.addToPartialMerge(W1Record);
+                revWitnesList.addToPartialMerge(W2Record);
+                
+                revWitnesList.FullMergeWintess.Clear();
 
             }
 
-            CombineMaxPartialTimeLines();
+            return revWitnesList;
         }
 
-        private void CombineMaxTimeLines()
+        private WitnessList FindBestMatchInPartialList(ref WitnessList newWitnessList)
         {
-            var total = wintessList.FullMergeWintess.Count;
-            if (total > 1)
+            var total = newWitnessList.FullMergeWintess.Count;
+            var parList = newWitnessList.PartialMergeWitness;
+            WitnessList revList = new WitnessList();//ref wintessList);
+            if (total == 1)
+                newWitnessList.addToPartialMerge(newWitnessList.FullMergeWintess[0]);
+            
+            
+            for (int i = 0; i < parList.Count; i++)
             {
-                ProcessWitnessOrder(prepareMergeRecrods(), true);
+                for (int j = i + 1; j < parList.Count; j++)
+                {
+                    var revTempWitnesList = ConstraintMatching(parList[i], parList[j], true);
+
+                    if (revTempWitnesList.FullMergeWintess.Count > 0)
+                    {
+                        var W1RecordLen = parList[i].GetWitnessRecordItems().Count;
+                        var W2RecordLen = parList[j].GetWitnessRecordItems().Count;
+                        var revRecordLen = revTempWitnesList.FullMergeWintess[0].GetWitnessRecordItems().Count;
+
+                        if (!((revRecordLen > W1RecordLen) && (revRecordLen > W2RecordLen)))
+                        {
+                            revList.addToPartialMerge(parList[i]);
+                            revList.addToPartialMerge(parList[j]);
+                        }
+                        else
+                            revList.addToFullMerge(revTempWitnesList.FullMergeWintess[0]);
+
+                    }
+                    else
+                    {
+                        if (revTempWitnesList.PartialMergeWitness.Count > 0)
+                        {
+                            foreach (var record in revTempWitnesList.PartialMergeWitness)
+                            {
+                                revList.addToPartialMerge(record);
+                            }
+                        }
+                    }
+
+                }
             }
+            if (revList.FullMergeWintess.Count > 1)
+            {
+                foreach(var record in revList.FullMergeWintess)
+                {
+                    revList.addToPartialMerge(record);
+                }
+                revList.FullMergeWintess.Clear();
+
+            }
+
+            return revList;
         }
+
+        private WitnessList CombineMaxTimeLines(WitnessList newWitnessList)
+        {
+            var total = newWitnessList.FullMergeWintess.Count;
+            WitnessList revList = null;
+            if (total == 2)
+            {
+               revList =  FindBestMatchInFullList(newWitnessList.FullMergeWintess[0], newWitnessList.FullMergeWintess[1], true);
+            }
+            else
+            {
+                var PMergeTotal = newWitnessList.PartialMergeWitness.Count;
+                if (PMergeTotal == 0 && total == 1)
+                {
+                    revList = newWitnessList;
+                }
+                else
+                {
+                   revList= FindBestMatchInPartialList(ref newWitnessList);
+                }
+            }
+            if (revList == null)
+                revList = newWitnessList;
+            return revList;
+        }
+
+ 
 
         private List<WitnessRecord> prepareMergeRecrods()
         {
@@ -241,54 +293,13 @@ namespace DetectiveSolver
             }
             return records;
         }
-        private void CombineMaxPartialTimeLines()
-        {
-            var total = wintessList.PartialMergeWitness.Count;
-            if (total > 2)
-            {
-                var totalWitness = wintessList.PartialMergeWitness;
-                 
-                var tempRec = new List<WitnessRecord>();
-                foreach (var rec in totalWitness)
-                {
-                    rec.LastVistedItem = -1;
-                    tempRec.Add(rec);
-                }
-                
-                
-                int remCount = tempRec.Count;
-                wintessList.PartialMergeWitness.Clear();
-                for (int count = 0; count < remCount; count++)
-                {
-                    for (int nextW = count + 1; nextW < remCount; nextW++)
-                    {
-                        ConstraintMatching(tempRec[count], tempRec[nextW], true);
-                        var FullMergeTotal = wintessList.FullMergeWintess.Count;
-                        if (FullMergeTotal > 1)
-                        {
-                            var MaxMergedRec = prepareMergeRecrods();
-                            if (MaxMergedRec.Count == 2)
-                            {
-                                ConstraintMatching(MaxMergedRec[0], MaxMergedRec[1], true);
-                                //if (wintessList.FullMergeWintess.Count == 1)
-                                //{
-                                //    if (wintessList.FullMergeWintess[0].GetWitnessRecordItems().Count = GetAllWitnessActions)
-                                //    {
-                                        
-                                //    }
-                                //}
-
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
-
-        protected void ConstraintMatching(WitnessRecord WitnessOne, WitnessRecord WitnessTwo,bool bIgnoreIfSplit)
+        
+        
+        protected WitnessList ConstraintMatching(WitnessRecord WitnessOne, WitnessRecord WitnessTwo, bool bIgnoreIfSplit)
         {
 
+            WitnessList newWitnessList = new WitnessList(ref wintessList);
+                         
             List<string> newRecordItems = new List<string>();
             List<string> subWitnessitems = null;
             bool bSplit = false;
@@ -369,7 +380,7 @@ namespace DetectiveSolver
                                     bSplit = true;
                                     subWitnessitems = new List<string>();
                                     int stIndex = stPos > 0 ? (stPos - 1) : -1;
-                                    if(stIndex>=0)
+                                    if (stIndex >= 0)
                                         CopyTillLastMatch(ref newRecordItems, WitnessTwoItemsList[stIndex].getWitness(), ref subWitnessitems);
 
                                     for (int j = stPos; j <= ItemIndex; j++)
@@ -437,11 +448,11 @@ namespace DetectiveSolver
                         var groupName = WitnessTwoItemsList[0].WitnessGroup;
                         if (!bIgnoreIfSplit)
                         {
-                             
+
                             if (iLastVistedPos + 1 == WitnessTwoItemsList.Count) // last item in second list
                             {
                                 bSplit = true;
-                                 
+
                                 subWitnessitems = new List<string>();
                                 CopyTillLastMatch(ref newRecordItems, lastMatchdString, ref subWitnessitems);
 
@@ -449,7 +460,7 @@ namespace DetectiveSolver
                                 {
                                     subWitnessitems.Add(WitnessTwoItemsList[j].getWitness());
                                 }
-                                 
+
                             }
 
                             if (bLastItem_W1 && WitnessOne.GetPrevItemMatched(groupName))
@@ -471,7 +482,7 @@ namespace DetectiveSolver
 
                 if (!bSplit)
                 {
-                    wintessList.addToFullMerge(CreateWitnessRecord(newRecordItems));
+                    newWitnessList.addToFullMerge(CreateWitnessRecord(newRecordItems));
                 }
                 else
                 {
@@ -480,38 +491,15 @@ namespace DetectiveSolver
                     {
                         if (subWitnessitems != null)
                         {
-                            wintessList.addToPartialMerge(CreateWitnessRecord(subWitnessitems));
+                            newWitnessList.addToPartialMerge(CreateWitnessRecord(subWitnessitems));
                         }
 
-                        wintessList.addToPartialMerge(CreateWitnessRecord(newRecordItems));
+                        newWitnessList.addToPartialMerge(CreateWitnessRecord(newRecordItems));
                     }
                     else
-                        wintessList.addToPartialMerge(WitnessTwo);
+                        newWitnessList.addToPartialMerge(WitnessTwo);
                 }
-#if DEBUG
-                Console.WriteLine("partial list");
-                foreach (var record in wintessList.PartialMergeWitness)
-                {
-                    foreach (var item in record.GetWitnessRecordItems())
-                        Console.WriteLine(item.getWitness());
-
-                    Console.WriteLine("\n");
-                }
-
-                Console.WriteLine("partial list\n");
-
-                Console.WriteLine("Full list");
-                foreach (var record in wintessList.FullMergeWintess)
-                {
-                    foreach (var item in record.GetWitnessRecordItems())
-                    Console.WriteLine(item.getWitness());
-
-                    Console.WriteLine("\n");
-                }
-
-                Console.WriteLine("Full list\n");
-
-#endif
+ 
 
             }
             catch (Exception e)
@@ -523,43 +511,10 @@ namespace DetectiveSolver
                 WitnessTwo.LastVistedItem = -1;
             }
 
-        }
-        void CopyTillLastMatch(ref List<string> newRecordItems, string lastMatched, ref List<string> subWitnessitems)
-        {
-            foreach (var newItem in newRecordItems)
-            {
-                subWitnessitems.Add(newItem);
-                if (newItem.Equals(lastMatched))
-                    break;
-            }
+            return newWitnessList;
         }
 
-        bool isItemMatched(string wintessItem, WitnessRecord witnessTwo, out int ItemFoundIndex)
-        {
-            bool bItemFound = false;
-            ItemFoundIndex = -1;
-            var witnessItemsList = witnessTwo.GetWitnessRecordItems();
-            int stIndex = witnessTwo.LastVistedItem + 1;
-
-            for (int item = stIndex; item < witnessItemsList.Count; item++)
-            {
-                if (wintessItem.Equals(witnessItemsList[item].getWitness()))
-                {
-                    ItemFoundIndex = witnessItemsList[item].WitnessPos;
-                    bItemFound = true;
-                    break;
-                }
-            }
-
-            return bItemFound;
-        }
-
-
-        private bool isWitnessMatched()
-        {
-            return wintessList.MatchListStatus();
-        }
-
+       
         public void IdentifyMatchingWitness()
         {
             var witness = wintessList.GetWitnessList;
@@ -590,6 +545,31 @@ namespace DetectiveSolver
             return;
         }
 
+        protected List<WitnessRecord> findFullMergeInPartialMerge(out bool bFullListFound)
+        {
+            List<WitnessRecord> showList = null;
+            bFullListFound = false;
+            int numOfActions = 0;
+            bool bFound = false;
+ 
+            foreach (var record in wintessList.PartialMergeWitness)
+            {
+                numOfActions = record.GetWitnessRecordItems().Count;
+                if (GetAllWitnessActions == numOfActions)
+                {
+                    showList = new List<WitnessRecord>();
+                    showList.Add(record);
+                    bFound = true;
+                    bFullListFound = true;
+                    break;
+                }
+
+            }
+            if (!bFound)
+                showList = wintessList.PartialMergeWitness;
+            return showList;
+        }
+
         protected List<WitnessRecord> generateOutput()
         {
             int ListCount = 0;
@@ -606,8 +586,6 @@ namespace DetectiveSolver
             }
             else
             {
-                CombineMaxPartialTimeLines();
-                CombineMaxTimeLines();
 
                 ListCount = wintessList.PartialMergeWitness.Count;
                 bool bFullListFound = false;
@@ -627,34 +605,26 @@ namespace DetectiveSolver
                 {
                     //Final processing
                     var record1 = wintessList.FullMergeWintess[0];
-                    bool bNoSplit = true;
-                    var tempList = showList;
-                    tempList.Insert(0,record1);
-                    ProcessWitnessOrder(tempList, bNoSplit);
+
+                    showList.Insert(0, record1);
+
                     if (wintessList.FullMergeWintess[0].GetWitnessRecordItems().Count == GetAllWitnessActions)
                     {
                         showList = wintessList.FullMergeWintess;
                         bFullListFound = true;
                     }
-                    //foreach (var record2 in showList)
-                    //{
-                    //    ConstraintMatching(record1, record2, bNoSplit);
-                    //    if (wintessList.FullMergeWintess[0].GetWitnessRecordItems().Count == GetAllWitnessActions)
-                    //    {
-                    //        showList = wintessList.FullMergeWintess;
-                    //        bFullListFound = true;
-                    //        break;
-                    //    }
-                    //}
-                    
+
+
                     if (!bFullListFound)
                         foreach (var record in wintessList.FullMergeWintess)
                             showList.Insert(0, record);
                 }
             }
 
+
             return showList;
         }
+
         protected void ShowResult()
         {
             int ListCount = 0;
@@ -701,32 +671,6 @@ namespace DetectiveSolver
 
             Console.WriteLine("\n*******output********************");
         }
-
-
-
-        protected List<WitnessRecord> findFullMergeInPartialMerge(out bool bFullListFound)
-        {
-            List<WitnessRecord> showList = null;
-            bFullListFound = false;
-            int numOfActions = 0;
-            bool bFound = false;
  
-            foreach (var record in wintessList.PartialMergeWitness)
-            {
-                numOfActions = record.GetWitnessRecordItems().Count;
-                if (GetAllWitnessActions == numOfActions)
-                {
-                    showList = new List<WitnessRecord>();
-                    showList.Add(record);
-                    bFound = true;
-                    bFullListFound = true;
-                    break;
-                }
-
-            }
-            if (!bFound)
-                showList = wintessList.PartialMergeWitness;
-            return showList;
-        }
     }  
 }
